@@ -1,0 +1,45 @@
+#Logging related settings
+[log]
+#Max size in MB for log file until rotate
+max_size = 1
+#Max number of log backups to keep
+max_backups = 5
+#Max number of days to keep log
+max_age = 7
+#Use local time for log rotation
+local_time = true
+#Compress log backups
+compress = true
+
+#MongoDB related configuration
+[database]
+#Hosts to connect to
+hosts = [ "localhost:27017" ]
+#Database name
+database_name = "monitoring"
+#Use any compressors
+#compressors = ["zlib"]
+#Replica set
+#replica_set = "some_replica_set"
+#Should retry write if fails
+#retry_writes = true
+#Should use direct connection
+#direct_connection = true
+#Zlib compress level
+#zlib_level = 1
+#Authentication mechanism
+#auth_authentication_mechanism = "some_mechanism"
+#Authentication source
+auth_authentication_source = "monitoring"
+#Database username
+auth_username = "monitor"
+#Database password
+auth_password = "m0n1t0r"
+#Is password not empty? Useful when password is empty app won't try to use empty password as password
+auth_is_password_set = true
+#Paths to Root CAs
+#tls_root_CAs = ["/path/to/ca_1", "/path/to/ca_2", "/path/to/ca_N"]
+#Path to certificate file
+#tls_certificate_file = "/path/to/cert_file"
+#Path to key file
+#tls_certificate_key_file = "/path/to/key_file"
