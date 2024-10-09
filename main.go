@@ -157,6 +157,8 @@ func main() {
 
 	webServerGroup.GET("/lac", LogActivityConsole)
 
+	webServerGroup.GET("/lac-data", LogActivityConsoleData)
+
 	webServerGroup.GET("/getKubeconfigs", func(c echo.Context) error {
 		handler := &GetKubeconfigsHandler{}
 		return handler.ServeHTTP(c)

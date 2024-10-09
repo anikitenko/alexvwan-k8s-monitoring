@@ -117,6 +117,59 @@ func (dh *DatabaseHelper) FindAll(collectionName string, filter bson.M, results 
 	return nil
 }
 
+func (dh *DatabaseHelper) FindGtLtLimit(collectionName string, field string, value interface{}, greater bool, equals bool, limit int, results interface{}) error {
+	var filter bson.M
+	if greater {
+		if equals {
+			filter = bson.M{field: bson.M{"$gte": value}}
+		} else {
+			filter = bson.M{field: bson.M{"$gt": value}}
+		}
+	} else {
+		if equals {
+			filter = bson.M{field: bson.M{"$lte": value}}
+		} else {
+			filter = bson.M{field: bson.M{"$lt": value}}
+		}
+	}
+
+	findOptions := options.Find()
+	findOptions.SetSort(bson.D{{field, -1}}).SetLimit(int64(limit))
+
+	cur, err := dh.db.Collection(collectionName).Find(context.TODO(), filter, findOptions)
+	if err != nil {
+		return err
+	}
+	defer func(cur *mongo.Cursor, ctx context.Context) {
+		err := cur.Close(ctx)
+		if err != nil {
+			logger.Warnf("Failed to close mongo cursor: %v", err)
+		}
+	}(cur, context.Background())
+
+	resultsVal := reflect.ValueOf(results)
+	if resultsVal.Kind() != reflect.Ptr || resultsVal.Elem().Kind() != reflect.Slice {
+		logger.Warnf("results argument must be a slice pointer")
+	}
+	resultsVal = resultsVal.Elem()
+
+	elemType := resultsVal.Type().Elem()
+	for cur.Next(context.Background()) {
+		elem := reflect.New(elemType).Interface() // create new type instance
+		err := cur.Decode(elem)
+		if err != nil {
+			return err
+		}
+		resultsVal.Set(reflect.Append(resultsVal, reflect.ValueOf(elem).Elem())) // append to slice
+	}
+
+	if err := cur.Err(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (dh *DatabaseHelper) InsertOne(collectionName string, data interface{}) error {
 	_, err := dh.db.Collection(collectionName).InsertOne(context.TODO(), data)
 	return err

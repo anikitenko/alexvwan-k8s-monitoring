@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	logger "github.com/sirupsen/logrus"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
+	"sort"
 	"time"
 )
 
@@ -21,6 +21,12 @@ func LogActivityConsole(c echo.Context) error {
 	// Flush to ensure the headers are sent
 	c.Response().WriteHeader(http.StatusOK)
 	c.Response().Flush()
+
+	queryTime, err := time.Parse(time.RFC3339, c.QueryParam("time"))
+	if err != nil {
+		logger.Warnf("Failed to parse time to get activity log when calling LogActivityConsole: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
 
 	// Create a change stream to watch the collection
 	pipeline := mongo.Pipeline{}
@@ -44,10 +50,13 @@ func LogActivityConsole(c echo.Context) error {
 		default:
 			if stream.Next(context.Background()) {
 				var response = make([]LogActivity, 0)
-				if err := DBHelper.FindAll(ActivityConsole, bson.M{}, &response); err != nil {
+				if err := DBHelper.FindGtLtLimit(ActivityConsole, "time", queryTime, true, false, 0, &response); err != nil {
 					logger.Warnf("Failed to get activity log when calling LogActivityConsole: %v", err)
 					return c.NoContent(http.StatusInternalServerError)
 				}
+				sort.Slice(response, func(i, j int) bool {
+					return response[i].Time.Before(response[j].Time)
+				})
 				// Convert the response to JSON
 				data, err := json.Marshal(response)
 				if err != nil {
